@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketFit AI — Cultural Risk Checker (MVP)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f3ee; --card:#fffdf9; --ink:#1d1b18; --muted:#6b655c; --line:#e4ddd2;
+    --accent:#1f4d45; --accent-2:#e7f0ec;
+    --low:#2f7d4f; --low-bg:#e5f3ea; --med:#b06d00; --med-bg:#fbf0dc; --high:#b3261e; --high-bg:#fbe5e3;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#161513; --card:#201f1c; --ink:#f1ede6; --muted:#a59e93; --line:#35322d;
+      --accent:#7fc2b0; --accent-2:#1f2e2a;
+      --low:#7fd39d; --low-bg:#1c2c22; --med:#f0b75a; --med-bg:#33291a; --high:#f28b82; --high-bg:#3a1f1d; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:34px;margin:0;letter-spacing:-.01em}
+  h1 span{color:var(--accent)}
+  .tag{color:var(--muted);margin:4px 0 0}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--accent-2);color:var(--accent)}
+  .grid{display:grid;grid-template-columns:400px 1fr;gap:20px;align-items:start}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h2{font-family:Fraunces,Georgia,serif;font-size:19px;margin:0 0 12px;font-weight:500}
+  label.l{display:block;font-weight:600;font-size:13px;margin:14px 0 6px}
+  label.l small{font-weight:400;color:var(--muted)}
+  textarea,input[type=text],input[type=date],select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  textarea{min-height:92px;resize:vertical}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--muted);cursor:pointer;background:var(--bg);position:relative}
+  .drop.over{border-color:var(--accent);color:var(--accent)}
+  .drop img{max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto}
+  .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .x{margin-top:6px;font-size:12px;background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;user-select:none}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:var(--card)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btns{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+  button.b{font:inherit;font-weight:600;border-radius:10px;padding:10px 16px;border:1px solid var(--accent);background:var(--accent);color:var(--card);cursor:pointer}
+  button.b.ghost{background:transparent;color:var(--accent)}
+  button.b:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px}
+  .status{padding:14px;border-radius:12px;background:var(--accent-2);color:var(--accent);font-weight:500;display:flex;gap:10px;align-items:center}
+  .spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s 0.8s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{background:var(--high-bg);color:var(--high)}
+  .empty{text-align:center;color:var(--muted);padding:50px 20px}
+  .empty .big{font-family:Fraunces,Georgia,serif;font-size:22px;color:var(--ink);margin-bottom:6px}
+  .summary{margin-bottom:16px}
+  .markets{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .mk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+  .mk-head h3{font-family:Fraunces,Georgia,serif;font-size:22px;margin:0;font-weight:500}
+  .gauge{text-align:right}
+  .gauge b{font-size:28px;font-family:Fraunces,Georgia,serif}
+  .risk{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 9px;border-radius:6px}
+  .risk.low{background:var(--low-bg);color:var(--low)} .risk.medium{background:var(--med-bg);color:var(--med)} .risk.high{background:var(--high-bg);color:var(--high)}
+  .bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+  .bar i{display:block;height:100%}
+  .sec{margin-top:16px}
+  .sec h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .issue{border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .issue.low{border-left-color:var(--low)} .issue.medium{border-left-color:var(--med)} .issue.high{border-left-color:var(--high)}
+  .issue .top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px}
+  .issue .el{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--muted)}
+  .issue p{margin:2px 0}
+  .conf{font-size:12px;color:var(--muted)}
+  .rec{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .rec .from{text-decoration:line-through;color:var(--muted)}
+  .rec .to{font-weight:600;color:var(--accent)}
+  ul.clean{margin:0;padding-left:18px} ul.clean li{margin-bottom:4px}
+  .expert{margin-top:14px;font-size:13px;padding:9px 12px;border-radius:10px;background:var(--med-bg);color:var(--med)}
+  .ethics{margin-top:22px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .demo-banner{font-size:13px;background:var(--med-bg);color:var(--med);padding:8px 12px;border-radius:10px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="pill">MVP prototype</span>
+      <h1>MarketFit <span>AI</span></h1>
+      <p class="tag">Check how your campaign will be perceived in each market — before you launch.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <form class="card" id="form" autocomplete="off">
+      <h2>1 · Your campaign</h2>
+
+      <label class="l">Ad image <small>(optional)</small></label>
+      <div class="drop" id="drop">
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp,image/gif">
+        <div id="dropText">Drop an image here or click to upload</div>
+        <img id="preview" alt="" hidden>
+      </div>
+      <button type="button" class="x" id="clearImg" hidden>Remove image</button>
+      <div class="hint" id="imgNote" hidden></div>
+
+      <label class="l" for="copy">Slogan, caption & hashtags</label>
+      <textarea id="copy" placeholder="e.g. Bold. Bare. Unstoppable. Summer drop — 50% off this Friday only! #NoLimits"></textarea>
+
+      <div class="row2">
+        <div>
+          <label class="l" for="industry">Industry</label>
+          <input type="text" id="industry" placeholder="e.g. Fashion">
+        </div>
+        <div>
+          <label class="l" for="date">Launch date</label>
+          <input type="date" id="date">
+        </div>
+      </div>
+
+      <label class="l" for="audience">Target audience <small>(age, gender, platform…)</small></label>
+      <input type="text" id="audience" placeholder="e.g. Women 18–30, Instagram & TikTok">
+
+      <h2 style="margin-top:22px">2 · Target markets <small style="font:400 13px Inter;color:var(--muted)">(pick up to 4)</small></h2>
+      <div class="chips" id="countries"></div>
+
+      <div class="btns">
+        <button type="submit" class="b" id="run">Analyze campaign</button>
+        <button type="button" class="b ghost" id="demo">Load demo scenario</button>
+      </div>
+      <div class="hint" id="aiNote"></div>
+    </form>
+
+    <!-- OUTPUT -->
+    <section id="out">
+      <div class="card empty">
+        <div class="big">Your cultural report will appear here</div>
+        Upload an ad, add the copy, pick your markets and run the analysis.<br>
+        Short on time? Click <b>Load demo scenario</b> for the clothing-brand example (Tunisia + Japan).
+      </div>
+    </section>
+  </div>
+
+  <p class="ethics"><b>How to read this report.</b> MarketFit AI flags <i>potential</i> risks, not absolute truths. Cultures are not uniform: meaning varies by region, generation and context. Every alert shows a confidence level, and sensitive cases should be validated by a local expert before publication.</p>
+</div>
+
+<script>
+const COUNTRIES = ["Tunisia","Algeria","Morocco","Egypt","Saudi Arabia","UAE","Qatar","Lebanon","Turkey","France","Germany","Italy","Spain","United Kingdom","United States","Brazil","Nigeria","India","Indonesia","China","Japan","South Korea"];
+const MAX = 4;
+const selected = new Set();
+let imageFile = null, sample = null, imagesOk = false, ctl = null, lastReport = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// Country chips
+function renderChips(){
+  $("countries").innerHTML = COUNTRIES.map(c =>
+    `<span class="chip ${selected.has(c)?"on":""}" data-c="${esc(c)}">${esc(c)}</span>`).join("");
+}
+$("countries").addEventListener("click", e => {
+  const c = e.target.dataset?.c; if(!c) return;
+  if(selected.has(c)) selected.delete(c);
+  else if(selected.size < MAX) selected.add(c);
+  renderChips();
+});
+renderChips();
+
+// Image upload
+function setImage(f){
+  if(!f || !/^image\//.test(f.type)) return;
+  imageFile = f;
+  const url = URL.createObjectURL(f);
+  $("preview").src = url; $("preview").hidden = false; $("dropText").hidden = true; $("clearImg").hidden = false;
+  $("imgNote").hidden = imagesOk || !sample; $("imgNote").textContent = "Image analysis isn't available in this view — only the text will be analyzed.";
+}
+$("file").addEventListener("change", e => setImage(e.target.files[0]));
+const drop = $("drop");
+["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
+drop.addEventListener("drop", e => { e.preventDefault(); setImage(e.dataTransfer.files[0]); });
+$("clearImg").addEventListener("click", () => {
+  imageFile = null; $("file").value = ""; $("preview").hidden = true; $("dropText").hidden = false; $("clearImg").hidden = true; $("imgNote").hidden = true;
+});
+
+// AI availability
+(async () => {
+  try { sample = await window.claude?.use?.("sample"); } catch { sample = null; }
+  if(sample){
+    try { const lim = await sample.limits(); imagesOk = !!lim?.images; } catch { imagesOk = false; }
+    $("aiNote").textContent = "Live AI analysis is on. The first run asks you to allow the page to use Claude.";
+  } else {
+    $("aiNote").textContent = "Live AI isn't available here, so the page runs in demo mode with a predefined result.";
+  }
+})();
+
+// Prompt
+function buildPrompt(){
+  return `You are MarketFit AI, a cultural-risk analyst for international marketing campaigns.
+Analyze the campaign below for EACH target market and identify how it may be perceived by the local audience: language and wording (including dialect, double meanings, slang, tone, humor), visuals (colors, symbols, clothing, gestures, body language, settings, numbers), religious and social norms, legal or regulatory sensitivities for advertising, and timing (religious, national or commercial events around the launch date).
+
+Rules:
+- Treat each market as diverse, never uniform. Avoid stereotypes. Phrase findings as potential risks, not certainties.
+- Give a confidence level for every issue (low/medium/high). Be honest when evidence is weak.
+- Only flag real, specific risks. If something is fine, say so in "strengths".
+- Recommendations must keep the brand identity and marketing objective.
+- Write in clear English. Keep each field concise (1–2 sentences).
+${imageFile && imagesOk ? "- An ad image is attached: analyze its visual elements too." : "- No image is provided: analyze text and context only, and do not invent visual details."}
+
+CAMPAIGN
+Ad copy: """${$("copy").value.trim() || "(none)"}"""
+Industry: ${$("industry").value.trim() || "(not given)"}
+Target audience: ${$("audience").value.trim() || "(not given)"}
+Launch date: ${$("date").value || "(not given)"}
+Target markets: ${[...selected].join(", ")}
+
+Reply with ONLY one JSON object, in this exact shape:
+{
+ "campaign_summary": "one sentence describing the campaign as you understood it",
+ "markets": [
+  {
+   "country": "Tunisia",
+   "overall_risk": "low|medium|high",
+   "risk_score": 0-100,
+   "verdict": "one-sentence bottom line for this market",
+   "issues": [
+     {"element": "text|image|timing|tone|legal", "item": "the exact word, visual or element", "risk": "low|medium|high", "why": "how the local audience may perceive it", "confidence": "low|medium|high"}
+   ],
+   "strengths": ["what already works well here"],
+   "copy_rewrites": [ {"original": "...", "suggested": "...", "why": "..."} ],
+   "visual_recommendations": ["..."],
+   "adaptation_tips": ["..."],
+   "needs_local_expert": true|false
+  }
+ ]
+}
+Include one entry in "markets" for each target market, in the same order.`;
+}
+
+// Demo data (fictional scenario from the project brief)
+const DEMO_INPUT = {
+  copy: "Bold. Bare. Unstoppable. ☀️ Our summer drop is here — 50% off this Friday only! #NoLimits #SummerSkin",
+  industry: "Fashion / clothing",
+  audience: "Women 18–30, Instagram & TikTok",
+  markets: ["Tunisia","Japan"]
+};
+const DEMO_REPORT = {
+  campaign_summary: "A clothing brand launches a summer collection with a bold, body-confident slogan and a one-day 50% discount on Friday.",
+  markets: [
+    { country:"Tunisia", overall_risk:"medium", risk_score:48,
+      verdict:"Works well with young urban audiences, but the 'bare skin' framing may limit reach with more conservative segments and families.",
+      issues:[
+        {element:"text", item:"\"Bare\" / #SummerSkin", risk:"medium", why:"Exposure-focused wording can feel provocative to more conservative audiences, especially outside big coastal cities.", confidence:"medium"},
+        {element:"timing", item:"\"This Friday only\"", risk:"low", why:"Friday is the main weekly prayer day; a promo is acceptable but midday push notifications may land badly.", confidence:"medium"},
+        {element:"text", item:"English-only copy", risk:"low", why:"Young Tunisians understand English slogans, but French or Derja usually feels closer and performs better.", confidence:"high"}
+      ],
+      strengths:["Summer timing fits the coastal holiday season.","A strong discount message is very effective in this market."],
+      copy_rewrites:[
+        {original:"Bold. Bare. Unstoppable.", suggested:"Bold. Free. Unstoppable.", why:"Keeps the confident tone while moving the focus from skin to attitude."},
+        {original:"#SummerSkin", suggested:"#SayfMa3na (Derja: 'Summer with us')", why:"A local, friendly hashtag that builds proximity."}
+      ],
+      visual_recommendations:["Show a mix of outfits, including covered looks, to reflect the real diversity of Tunisian women.","Use Mediterranean settings (Sidi Bou Said, beaches) to build local recognition."],
+      adaptation_tips:["Produce a French or Derja version of the copy.","Schedule Friday posts outside midday prayer time."],
+      needs_local_expert:false },
+    { country:"Japan", overall_risk:"low", risk_score:27,
+      verdict:"Low cultural risk, but the tone may feel too loud; Japanese audiences often respond better to subtle, quality-focused messaging.",
+      issues:[
+        {element:"tone", item:"\"Unstoppable\" / #NoLimits", risk:"low", why:"Very assertive, individualistic messaging can feel out of step with a preference for understated communication.", confidence:"medium"},
+        {element:"text", item:"\"50% off\"", risk:"low", why:"Deep discounts can signal lower quality for a fashion brand positioning itself as premium.", confidence:"medium"}
+      ],
+      strengths:["Summer collections and limited-time offers are familiar and well accepted.","Body-confidence themes are not a cultural issue in this context."],
+      copy_rewrites:[
+        {original:"Bold. Bare. Unstoppable.", suggested:"Light, free, made for summer.", why:"A softer tone that highlights comfort and seasonality, both valued by Japanese consumers."},
+        {original:"50% off this Friday only!", suggested:"A limited summer edition — available this week", why:"Scarcity and seasonality work better than heavy discounting for brand image."}
+      ],
+      visual_recommendations:["Favor clean, minimalist layouts with plenty of white space.","Highlight fabric quality and details in close-up shots."],
+      adaptation_tips:["Translate into natural Japanese copy (transcreation, not literal translation).","Consider tying the launch to seasonal events such as summer festivals."],
+      needs_local_expert:false }
+  ]
+};
+
+$("demo").addEventListener("click", () => {
+  $("copy").value = DEMO_INPUT.copy; $("industry").value = DEMO_INPUT.industry; $("audience").value = DEMO_INPUT.audience;
+  selected.clear(); DEMO_INPUT.markets.forEach(m => selected.add(m)); renderChips();
+  if(!sample){ render(DEMO_REPORT, true); }
+  else { $("aiNote").textContent = "Demo campaign loaded. Click Analyze campaign to run the live AI, or add your own ad image first."; }
+});
+
+// Run
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if(selected.size === 0){ showStatus("Pick at least one target market.", true); return; }
+  if(!$("copy").value.trim() && !imageFile){ showStatus("Add the ad copy or an image to analyze.", true); return; }
+  if(!sample){ render(DEMO_REPORT, true); return; }
+
+  ctl?.abort(); ctl = new AbortController();
+  $("run").disabled = true;
+  showStatus(`Analyzing your campaign for ${[...selected].join(", ")}… this can take up to a minute.`, false, true);
+  try{
+    const opts = { signal: ctl.signal, cache: false };
+    if(imageFile && imagesOk) opts.images = [imageFile];
+    const report = await sample.json(buildPrompt(), opts);
+    if(!report || !Array.isArray(report.markets)) throw {code:"invalid_json"};
+    render(report, false);
+  }catch(err){
+    const msg = {
+      not_granted:"Live AI wasn't allowed for this page. You can still use the demo scenario.",
+      sampling_disabled:"Live AI isn't available for this account. You can still use the demo scenario.",
+      rate_limited:"Too many requests right now. Please wait a moment and try again.",
+      image_rejected:"That image couldn't be used. Try a JPG or PNG under 20 MB.",
+      invalid_json:"The AI answer couldn't be read. Please try again.",
+      refused:"The AI declined to analyze this content. Try rewording the campaign.",
+      cancelled:null
+    }[err?.code] ?? "Something went wrong during the analysis. Please try again.";
+    if(err?.code === "not_granted" || err?.code === "sampling_disabled") sample = null;
+    if(msg) showStatus(msg, true);
+  }finally{ $("run").disabled = false; }
+});
+
+function showStatus(text, isErr, spinning){
+  $("out").innerHTML = `<div class="status ${isErr?"err":""}">${spinning?'<span class="spin"></span>':""}<span>${esc(text)}</span></div>`;
+}
+
+const lvl = v => ["low","medium","high"].includes(String(v).toLowerCase()) ? String(v).toLowerCase() : "medium";
+const barColor = s => s >= 60 ? "var(--high)" : s >= 35 ? "var(--med)" : "var(--low)";
+
+function render(r, isDemo){
+  lastReport = r;
+  const markets = (r.markets||[]).map(m => {
+    const score = Math.max(0, Math.min(100, Number(m.risk_score)||0));
+    const issues = (m.issues||[]).slice().sort((a,b)=>["high","medium","low"].indexOf(lvl(a.risk))-["high","medium","low"].indexOf(lvl(b.risk)));
+    return `<article class="card">
+      <div class="mk-head">
+        <div><h3>${esc(m.country)}</h3><span class="risk ${lvl(m.overall_risk)}">${esc(lvl(m.overall_risk))} risk</span></div>
+        <div class="gauge"><b>${score}</b><span class="conf">/100</span></div>
+      </div>
+      <div class="bar"><i style="width:${score}%;background:${barColor(score)}"></i></div>
+      <p style="margin:10px 0 0">${esc(m.verdict)}</p>
+
+      <div class="sec"><h4>Potential risks (${issues.length})</h4>
+        ${issues.length ? issues.map(i => `<div class="issue ${lvl(i.risk)}">
+          <div class="top"><span class="el">${esc(i.element)}</span><span class="risk ${lvl(i.risk)}">${esc(lvl(i.risk))}</span></div>
+          <p><b>${esc(i.item)}</b></p><p>${esc(i.why)}</p>
+          <p class="conf">Confidence: ${esc(lvl(i.confidence))}</p></div>`).join("") : `<p class="conf">No specific risk detected.</p>`}
+      </div>
+
+      ${(m.strengths||[]).length ? `<div class="sec"><h4>What already works</h4><ul class="clean">${m.strengths.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></div>`:""}
+
+      ${(m.copy_rewrites||[]).length ? `<div class="sec"><h4>Suggested rewrites</h4>${m.copy_rewrites.map(c=>`<div class="rec">
+        <div class="from">${esc(c.original)}</div><div class="to">→ ${esc(c.suggested)}</div><div class="conf">${esc(c.why)}</div></div>`).join("")}</div>`:""}
+
+      ${(m.visual_recommendations||[]).length ? `<div class="sec"><h4>Visual recommendations</h4><ul class="clean">${m.visual_recommendations.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></div>`:""}
+
+      ${(m.adaptation_tips||[]).length ? `<div class="sec"><h4>Adaptation tips</h4><ul class="clean">${m.adaptation_tips.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></div>`:""}
+
+      ${m.needs_local_expert ? `<div class="expert">⚠ Sensitive case: validate with a local expert before publishing.</div>`:""}
+    </article>`;
+  }).join("");
+
+  $("out").innerHTML = `
+    ${isDemo ? `<div class="demo-banner">Demo mode: predefined result for the fictional clothing-brand scenario. Live AI analysis runs when the page can use Claude.</div>`:""}
+    <div class="toolbar">
+      <div class="summary"><span class="conf">Campaign understood as</span><br><b>${esc(r.campaign_summary)}</b></div>
+      <button class="b ghost" id="copyBtn" type="button">Copy report</button>
+    </div>
+    <div class="markets">${markets}</div>`;
+  $("copyBtn").addEventListener("click", copyReport);
+}
+
+async function copyReport(){
+  const r = lastReport; if(!r) return;
+  const lines = [`MarketFit AI — Cultural report`, r.campaign_summary, ""];
+  for(const m of r.markets||[]){
+    lines.push(`== ${m.country}: ${lvl(m.overall_risk).toUpperCase()} risk (${m.risk_score}/100)`, m.verdict);
+    (m.issues||[]).forEach(i => lines.push(`- [${lvl(i.risk)}] ${i.item}: ${i.why} (confidence: ${lvl(i.confidence)})`));
+    (m.copy_rewrites||[]).forEach(c => lines.push(`  Rewrite: "${c.original}" → "${c.suggested}"`));
+    [...(m.visual_recommendations||[]), ...(m.adaptation_tips||[])].forEach(t => lines.push(`  Tip: ${t}`));
+    lines.push("");
+  }
+  try{ await navigator.clipboard.writeText(lines.join("\n")); $("copyBtn").textContent = "Copied ✓"; }
+  catch{ $("copyBtn").textContent = "Copy not allowed here"; }
+}
+</script>
+</body>
+</html>
